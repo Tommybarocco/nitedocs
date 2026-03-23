@@ -1,0 +1,125 @@
+<div style="position:relative;width:100%;height:480px;border-radius:var(--border-radius-lg);overflow:hidden">
+<canvas id="c" style="width:100%;height:100%"></canvas>
+</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let w, h, t = 0;
+
+function resize() {
+  const r = window.devicePixelRatio || 1;
+  w = canvas.offsetWidth * r;
+  h = canvas.offsetHeight * r;
+  canvas.width = w;
+  canvas.height = h;
+}
+resize();
+window.addEventListener('resize', resize);
+
+function cubicBez(pts, t) {
+  const u = 1 - t;
+  return {
+    x: u*u*u*pts[0].x + 3*u*u*t*pts[1].x + 3*u*t*t*pts[2].x + t*t*t*pts[3].x,
+    y: u*u*u*pts[0].y + 3*u*u*t*pts[1].y + 3*u*t*t*pts[2].y + t*t*t*pts[3].y,
+  };
+}
+
+function drawBlob(cx, cy, radiusX, radiusY, wobbleAmp, wobbleFreq, phase, rotation) {
+  const pts = [];
+  const segments = 120;
+  for (let i = 0; i <= segments; i++) {
+    const a = (i / segments) * Math.PI * 2;
+    const wobble = 1 + Math.sin(a * wobbleFreq + phase) * wobbleAmp
+                     + Math.sin(a * (wobbleFreq + 1.5) + phase * 0.7) * wobbleAmp * 0.5;
+    const rx = radiusX * wobble;
+    const ry = radiusY * wobble;
+    const cos_r = Math.cos(rotation);
+    const sin_r = Math.sin(rotation);
+    const px = Math.cos(a) * rx;
+    const py = Math.sin(a) * ry;
+    pts.push({
+      x: cx + px * cos_r - py * sin_r,
+      y: cy + px * sin_r + py * cos_r,
+    });
+  }
+  return pts;
+}
+
+function fillBlobGrad(pts, cx, cy, r, colors) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) {
+    const prev = pts[i - 1];
+    const cur = pts[i];
+    const mx = (prev.x + cur.x) / 2;
+    const my = (prev.y + cur.y) / 2;
+    ctx.quadraticCurveTo(prev.x, prev.y, mx, my);
+  }
+  ctx.closePath();
+  const g = ctx.createRadialGradient(
+    cx - r * 0.25, cy - r * 0.25, r * 0.05,
+    cx + r * 0.1, cy + r * 0.1, r * 1.1
+  );
+  colors.forEach((c, i) => g.addColorStop(i / (colors.length - 1), c));
+  ctx.fillStyle = g;
+  ctx.fill();
+}
+
+const shapes = [
+  {
+    cx: 0.18, cy: 0.22, rx: 0.42, ry: 0.48, wAmp: 0.12, wFreq: 3,
+    spdX: 0.08, spdY: 0.06, spdR: 0.15, spdP: 0.4,
+    colors: ['rgba(45,30,100,0.95)', 'rgba(20,15,65,0.9)', 'rgba(10,10,45,0.85)'],
+  },
+  {
+    cx: 0.75, cy: 0.18, rx: 0.38, ry: 0.35, wAmp: 0.15, wFreq: 2.5,
+    spdX: -0.06, spdY: 0.09, spdR: -0.12, spdP: 0.35,
+    colors: ['rgba(240,160,70,0.92)', 'rgba(235,120,55,0.88)', 'rgba(200,70,90,0.8)'],
+  },
+  {
+    cx: 0.55, cy: 0.50, rx: 0.50, ry: 0.45, wAmp: 0.18, wFreq: 2,
+    spdX: 0.05, spdY: -0.04, spdR: 0.1, spdP: 0.3,
+    colors: ['rgba(220,85,120,0.9)', 'rgba(190,55,100,0.85)', 'rgba(140,35,80,0.75)'],
+  },
+  {
+    cx: 0.30, cy: 0.75, rx: 0.44, ry: 0.40, wAmp: 0.14, wFreq: 3.5,
+    spdX: -0.07, spdY: -0.05, spdR: 0.18, spdP: 0.5,
+    colors: ['rgba(250,185,85,0.88)', 'rgba(240,140,60,0.82)', 'rgba(215,75,110,0.7)'],
+  },
+  {
+    cx: 0.80, cy: 0.72, rx: 0.36, ry: 0.42, wAmp: 0.10, wFreq: 2.8,
+    spdX: 0.04, spdY: 0.07, spdR: -0.08, spdP: 0.45,
+    colors: ['rgba(30,22,75,0.9)', 'rgba(60,35,105,0.8)', 'rgba(180,50,95,0.65)'],
+  },
+];
+
+function draw() {
+  t += 0.004;
+
+  const bg = ctx.createLinearGradient(0, 0, w, h);
+  bg.addColorStop(0, '#0d0b28');
+  bg.addColorStop(0.4, '#1a1040');
+  bg.addColorStop(0.7, '#2a1535');
+  bg.addColorStop(1, '#1a0e2a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, w, h);
+
+  for (const s of shapes) {
+    const cx = (s.cx + Math.sin(t * s.spdX * 2 + s.spdP * 10) * 0.08) * w;
+    const cy = (s.cy + Math.cos(t * s.spdY * 2 + s.spdP * 8) * 0.06) * h;
+    const rx = s.rx * Math.min(w, h);
+    const ry = s.ry * Math.min(w, h);
+    const rotation = t * s.spdR;
+    const phase = t * s.spdP * 2;
+
+    const pts = drawBlob(cx, cy, rx, ry, s.wAmp, s.wFreq, phase, rotation);
+    fillBlobGrad(pts, cx, cy, Math.max(rx, ry), s.colors);
+  }
+
+  ctx.fillStyle = 'rgba(13,11,40,0.06)';
+  ctx.fillRect(0, 0, w, h);
+
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
