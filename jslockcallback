@@ -1,0 +1,15 @@
+// Dans LockButton, ajoutez une prop
+const LockButton = ({ onToggle }) => {
+  // ...
+  const toggleLock = () => {
+    const newState = !isLocked;
+    setIsLocked(newState);
+    onToggle?.(newState); // notifie le parent
+    // ...
+  };
+};
+
+// Utilisation
+<LockButton onToggle={(locked) => {
+  console.log(locked ? 'Verrouillé' : 'Déverrouillé');
+}} />
