@@ -1,0 +1,58 @@
+<div style="position:relative;width:100%;height:480px;border-radius:var(--border-radius-lg);overflow:hidden">
+<canvas id="c" style="width:100%;height:100%"></canvas>
+</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let w, h, t = 0;
+
+function resize() {
+  const r = window.devicePixelRatio || 1;
+  w = canvas.offsetWidth * r;
+  h = canvas.offsetHeight * r;
+  canvas.width = w;
+  canvas.height = h;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const spots = [
+  { cx: 0.20, cy: 0.25, r: 0.7, col: [12, 10, 48],   sx: 0.13, sy: 0.10, sp: 0.23 },
+  { cx: 0.80, cy: 0.20, r: 0.65, col: [35, 20, 75],   sx: 0.10, sy: 0.14, sp: 0.18 },
+  { cx: 0.65, cy: 0.55, r: 0.75, col: [200, 60, 105], sx: 0.15, sy: 0.12, sp: 0.20 },
+  { cx: 0.30, cy: 0.65, r: 0.60, col: [180, 45, 90],  sx: 0.11, sy: 0.16, sp: 0.28 },
+  { cx: 0.50, cy: 0.35, r: 0.70, col: [240, 145, 60], sx: 0.14, sy: 0.09, sp: 0.15 },
+  { cx: 0.85, cy: 0.75, r: 0.55, col: [245, 180, 75], sx: 0.09, sy: 0.13, sp: 0.25 },
+  { cx: 0.15, cy: 0.80, r: 0.60, col: [15, 12, 55],   sx: 0.12, sy: 0.11, sp: 0.22 },
+  { cx: 0.45, cy: 0.80, r: 0.55, col: [220, 75, 115], sx: 0.08, sy: 0.15, sp: 0.30 },
+  { cx: 0.70, cy: 0.40, r: 0.50, col: [250, 165, 65], sx: 0.16, sy: 0.07, sp: 0.17 },
+  { cx: 0.35, cy: 0.45, r: 0.65, col: [25, 15, 65],   sx: 0.07, sy: 0.12, sp: 0.21 },
+];
+
+function draw() {
+  t += 0.002;
+
+  ctx.fillStyle = '#0d0a2c';
+  ctx.fillRect(0, 0, w, h);
+
+  const dim = Math.max(w, h);
+
+  for (const s of spots) {
+    const cx = (s.cx + Math.sin(t * s.sp * 3 + s.sx * 40) * s.sx) * w;
+    const cy = (s.cy + Math.cos(t * s.sp * 2.5 + s.sy * 40) * s.sy) * h;
+    const r = s.r * dim;
+    const [cr, cg, cb] = s.col;
+
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, `rgba(${cr},${cg},${cb},0.7)`);
+    g.addColorStop(0.3, `rgba(${cr},${cg},${cb},0.4)`);
+    g.addColorStop(0.6, `rgba(${cr},${cg},${cb},0.12)`);
+    g.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
